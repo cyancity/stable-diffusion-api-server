@@ -100,6 +100,7 @@ def draw():
 
 def handleTask(reqBody):
     print('===> Task Start')
+    print(reqBody)
     gpu_running = True
     accessToken = getAccessToken()
     # Handle request:
@@ -124,7 +125,7 @@ def handleTask(reqBody):
             args_dict = {
                 # sampler
                 'prompt': [prompt],
-                'num_inference_steps': retrieve_param('num_inference_steps', reqBody, int, 5),
+                'num_inference_steps': retrieve_param('num_inference_steps', reqBody, int, 50),
                 'guidance_scale': retrieve_param('guidance_scale', reqBody, float, 7.5),
                 'eta': retrieve_param('eta', reqBody, float, 0.0),
                 'generator': generator
