@@ -1,7 +1,7 @@
 import torch
 import flask
 import diffusers
-import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from setting import (
     config,
@@ -21,6 +21,7 @@ from utils import (
 # Engines
 
 gpu_running = False
+executor = ThreadPoolExecutor(2)
 
 class Engine(object):
     def __init__(self):
@@ -97,7 +98,8 @@ def draw():
 # def stable_custom(model):
 #     return _generate('txt2img', model)
 
-async def handleAsyncTask(reqBody):
+def handleTask(reqBody):
+    print('===> Task Start')
     gpu_running = True
     output_data = {}
     accessToken = getAccessToken()
@@ -194,9 +196,9 @@ def _generate():
     if gpu_running:
         return flask.jsonify({"msg": 'Gpu busy', "code": -1})
     else:
-        asyncio.create_task(handleAsyncTask(flask.request.form))
+        executor.submit(handleTask, flask.request.form)
 
-        return flask.jsonify({"msg": 'Gpu Running', "code": 0})
+        return flask.jsonify({"msg": 'Gpu Start', "code": 0})
 
 
 
