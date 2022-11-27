@@ -1,6 +1,7 @@
 import torch
 import flask
 import diffusers
+import asyncio
 
 from setting import (
     config,
@@ -96,23 +97,17 @@ def draw():
 # def stable_custom(model):
 #     return _generate('txt2img', model)
 
-
-def _generate():
-    # Prepare output container:
-    if gpu_running:
-        return flask.jsonify({"msg": 'Gpu busy', "code": -1})
-    else:
-        flask.jsonify({"msg": 'Gpu busy', "code": -1})
-
+async def handleAsyncTask(reqBody):
+    gpu_running = True
     output_data = {}
     accessToken = getAccessToken()
     # Handle request:
-    prompt = flask.request.form['prompt']
-    imageId = flask.request.form['imageId']
-    taskId = flask.request.form['taskId']
+    prompt = reqBody['prompt']
+    imageId = reqBody['imageId']
+    taskId = reqBody['taskId']
 
-    seed = retrieve_param('seed', flask.request.form, int, 0)
-    count = retrieve_param('num_outputs', flask.request.form, int,   1)
+    seed = retrieve_param('seed', reqBody, int, 0)
+    count = retrieve_param('num_outputs', reqBody, int,   1)
 
     try:
         total_results = []
@@ -128,9 +123,9 @@ def _generate():
             args_dict = {
                 # sampler
                 'prompt': [prompt],
-                'num_inference_steps': retrieve_param('num_inference_steps', flask.request.form, int, 50),
-                'guidance_scale': retrieve_param('guidance_scale', flask.request.form, float, 7.5),
-                'eta': retrieve_param('eta', flask.request.form, float, 0.0),
+                'num_inference_steps': retrieve_param('num_inference_steps', reqBody, int, 50),
+                'guidance_scale': retrieve_param('guidance_scale', reqBody, float, 7.5),
+                'eta': retrieve_param('eta', reqBody, float, 0.0),
                 'generator': generator
             }
 
@@ -139,21 +134,22 @@ def _generate():
                 pipe = txt2img
                 args_dict['init_image'] = None
                 args_dict['width'] = retrieve_param(
-                    'width', flask.request.form, int, 512)
+                    'width', reqBody, int, 512)
                 args_dict['height'] = retrieve_param(
-                    'height', flask.request.form, int, 512)
+                    'height', reqBody, int, 512)
             else:
                 pipe = img2img
                 wx_img = get_wximg_by_id(imageId, accessToken)
                 if not wx_img:
                     finishTask(accessToken, taskId)
-                    return flask.jsonify(str(e))
+                    gpu_running = False
+                    return
                 args_dict['init_image'] = wx_img['image']
 
             args_dict['strength'] = retrieve_param(
-                'strength', flask.request.form, float, 0.7)
+                'strength', reqBody, float, 0.7)
             # if (task == 'masking'):
-            #     mask_img_b64 = flask.request.form[ 'mask_image' ]
+            #     mask_img_b64 = reqBody[ 'mask_image' ]
             #     mask_img_b64 = re.sub( '^data:image/png;base64,', '', mask_img_b64 )
             #     mask_img_pil = b64_to_pil( mask_img_b64 )
             #     args_dict[ 'mask_image' ] = mask_img_pil
@@ -162,6 +158,8 @@ def _generate():
             print('===> Start Rendering')
             pipeline_output = pipe.process(args_dict)
             pipeline_output['seed'] = new_seed
+            print('===> Rendered')
+            gpu_running = False
             total_results.append(pipeline_output)
         # Prepare response
         output_data['status'] = 'success'
@@ -179,7 +177,10 @@ def _generate():
         print('===> prepare upload wximg')
         upload_wximg(accessToken, taskId, images[0]['seed'], images[0].image)
 
+        # return flask.jsonify({"msg": 'Gpu busy', "code": -1})
+
     except RuntimeError as e:
+        gpu_running = False
         finishTask(accessToken, taskId)
         output_data['status'] = 'failure'
         output_data['message'] = 'A RuntimeError occurred. You probably ran out of GPU memory. Check the server logs for more details.'
@@ -187,6 +188,17 @@ def _generate():
         return flask.jsonify(str(e))
 
     # return flask.jsonify(output_data)
+
+def _generate():
+    # Prepare output container:
+    if gpu_running:
+        return flask.jsonify({"msg": 'Gpu busy', "code": -1})
+    else:
+        asyncio.create_task(handleAsyncTask(flask.request.form))
+
+        return flask.jsonify({"msg": 'Gpu Running', "code": 0})
+
+
 
 
 if __name__ == '__main__':

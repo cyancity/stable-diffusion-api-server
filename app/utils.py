@@ -1,11 +1,12 @@
 import flask
 import base64
 import requests
-import json
+
+
 from PIL import Image
 from io import BytesIO
 from setting import (config)
-
+from threading import Thread
 
 def retrieve_param(key, data, cast, default):
     if key in data:
