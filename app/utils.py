@@ -113,10 +113,15 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
         info = upload_info.json()
         print('===> upload_info', info )
 
+
+
+
+
         if not info["errcode"] == 0:
             print('==> upload Failed', info)
             # Failed
             return finishTask(accessToken, taskId)
+
         upload_img = requests.post(info['url'], files={
             "file": (path, pilImg, 'image/png', {}),
             "key": path,
@@ -125,11 +130,13 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
             "x-cos-meta-fileid	": info['cos_file_id']
             })
 
-        print('===> upload img', upload_img)
 
-        if upload_img.ok:
+        print(upload_img.status_code)
+        if upload_img.status_code >=200 and upload_img.status_code < 300:
+            print('===> Finish Task !!!!!!')
             finishTask(accessToken, taskId, info['file_id'])
         else:
+            print('===> Failed Task !!!!!!')
             finishTask(accessToken, taskId)
     except RuntimeError as e:
         finishTask(accessToken, taskId)
