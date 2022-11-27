@@ -101,7 +101,6 @@ def draw():
 def handleTask(reqBody):
     print('===> Task Start')
     gpu_running = True
-    output_data = {}
     accessToken = getAccessToken()
     # Handle request:
     prompt = reqBody['prompt']
@@ -164,7 +163,6 @@ def handleTask(reqBody):
             gpu_running = False
             total_results.append(pipeline_output)
         # Prepare response
-        output_data['status'] = 'success'
         images = []
         for result in total_results:
             images.append({
@@ -174,13 +172,12 @@ def handleTask(reqBody):
                 'nsfw': result['nsfw']
             })
 
-        output_data['images'] = images
-
         print('===> prepare upload wximg')
 
         print(accessToken, taskId)
         print('lalalla')
-        print(images.__len__)
+        print(len(images))
+        print(images)
         upload_wximg(accessToken, taskId, images[0]['seed'], images[0].image)
         print('lalalal')
         # return flask.jsonify({"msg": 'Gpu busy', "code": -1})
@@ -189,8 +186,6 @@ def handleTask(reqBody):
         print(str(e))
         gpu_running = False
         finishTask(accessToken, taskId)
-        output_data['status'] = 'failure'
-        output_data['message'] = 'A RuntimeError occurred. You probably ran out of GPU memory. Check the server logs for more details.'
 
 
 def _generate():
