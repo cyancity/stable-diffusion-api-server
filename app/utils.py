@@ -96,27 +96,37 @@ def finishTask(accessToken: str, taskId: str, fileId: str = ''):
     print('===> Cloud Func Res', r.status_code, r._content)
 
 def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
+
+    print(pilImg)
     path = taskId + "/" + "seed" + str(seed) + ".png"
-    upload_info = requests.post(config['wx_prefix'] + config['wx_upload_path'], params={
-        "access_token": accessToken,
-        "env": config['wx_img_env'],
-        "path": path
-    }).json()
 
-    # pilImg.image.open()
+    try:
+        upload_info = requests.post(config['wx_prefix'] + config['wx_upload_path'], params={
+            "access_token": accessToken,
+            "env": config['wx_img_env'],
+            "path": path
+        }).json()
+
+        print('===> upload_info', upload_info, upload_info.fileId )
 
 
-    if not upload_info["errcode"] == 0:
-        # Failed
-        return finishTask(accessToken, taskId)
-    upload_img = requests.post(upload_info['url'], files={"file": pilImg}, json={
-        "key": path,
-        "Signature": upload_info['authorization'],
-        "x-cos-security-token": upload_info['token'],
-        "x-cos-meta-fileid	": upload_info['cos_file_id']
-    })
+        if not upload_info["errcode"] == 0:
+            print('==> upload Failed', upload_info)
+            # Failed
+            return finishTask(accessToken, taskId)
+        upload_img = requests.post(upload_info['url'], files={"file": pilImg}, json={
+            "key": path,
+            "Signature": upload_info['authorization'],
+            "x-cos-security-token": upload_info['token'],
+            "x-cos-meta-fileid	": upload_info['cos_file_id']
+        })
 
-    if upload_img.ok:
-        finishTask(accessToken, taskId, upload_info['file_id'])
-    else:
+        print('===> upload img', upload_img)
+
+        if upload_img.ok:
+            finishTask(accessToken, taskId, upload_info['file_id'])
+        else:
+            finishTask(accessToken, taskId)
+    except RuntimeError as e:
         finishTask(accessToken, taskId)
+        print(str(e))
