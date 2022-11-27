@@ -104,28 +104,32 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
     try:
         upload_info = requests.post(config['wx_prefix'] + config['wx_upload_path'], params={
             "access_token": accessToken,
+        }, json={
             "env": config['wx_img_env'],
             "path": path
-        }).json()
+        })
 
         print('===> upload_info', upload_info )
 
+        info = upload_info.json()
+        print('json', upload_info)
 
-        if not upload_info["errcode"] == 0:
-            print('==> upload Failed', upload_info)
+        if not info["errcode"] == 0:
+            print('==> upload Failed', info)
             # Failed
             return finishTask(accessToken, taskId)
-        upload_img = requests.post(upload_info['url'], files={"file": pilImg}, json={
+        upload_img = requests.post(info['url'], files={
+            "file": (path, pilImg, 'image/png', {}),
             "key": path,
-            "Signature": upload_info['authorization'],
-            "x-cos-security-token": upload_info['token'],
-            "x-cos-meta-fileid	": upload_info['cos_file_id']
-        })
+            "Signature": info['authorization'],
+            "x-cos-security-token": info['token'],
+            "x-cos-meta-fileid	": info['cos_file_id']
+            })
 
         print('===> upload img', upload_img)
 
         if upload_img.ok:
-            finishTask(accessToken, taskId, upload_info['file_id'])
+            finishTask(accessToken, taskId, info['file_id'])
         else:
             finishTask(accessToken, taskId)
     except RuntimeError as e:
