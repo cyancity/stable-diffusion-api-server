@@ -178,8 +178,9 @@ def handleTask(reqBody):
 
         print('===> prepare upload wximg')
 
-        print(accessToken, taskId, images[0]['seed'], images[0].image)
+        print(accessToken, taskId)
         print('lalalla')
+        print(images.__len__)
         upload_wximg(accessToken, taskId, images[0]['seed'], images[0].image)
         print('lalalal')
         # return flask.jsonify({"msg": 'Gpu busy', "code": -1})
