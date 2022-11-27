@@ -23,4 +23,4 @@ output = BytesIO()
 
 img.save(output, format='PNG')
 
-upload_wximg(token, taskId, seed, png)
+upload_wximg(token, taskId, seed, img)
