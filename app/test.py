@@ -22,4 +22,4 @@ output = BytesIO()
 img.save(output, format='PNG')
 
 print(output)
-upload_wximg(token, taskId, seed, output)
+upload_wximg(token, taskId, seed, img)

@@ -109,13 +109,13 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
             "path": path
         })
 
+        output = BytesIO()
+
+        pilImg.save(output, format='PNG')
+
 
         info = upload_info.json()
         print('===> upload_info', info )
-
-
-
-
 
         if not info["errcode"] == 0:
             print('==> upload Failed', info)
@@ -123,7 +123,7 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
             return finishTask(accessToken, taskId)
 
         upload_img = requests.post(info['url'], files={
-            "file": (path, pilImg, 'image/png', {}),
+            "file": (path, output, 'image/png', {}),
             "key": path,
             "Signature": info['authorization'],
             "x-cos-security-token": info['token'],
