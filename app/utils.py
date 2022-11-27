@@ -100,7 +100,7 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
     print('Start upload_wximg')
 
     path = taskId + "/" + "seed" + str(seed) + ".png"
-
+    print('===================', path)
     try:
         upload_info = requests.post(config['wx_prefix'] + config['wx_upload_path'], params={
             "access_token": accessToken,
@@ -127,7 +127,7 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
             "key": path,
             "Signature": info['authorization'],
             "x-cos-security-token": info['token'],
-            "x-cos-meta-fileid	": info['cos_file_id']
+            "x-cos-meta-fileid": info['cos_file_id']
             })
 
 
