@@ -14,8 +14,7 @@ from utils import (
     getAccessToken,
     get_wximg_by_id,
     get_compute_platform,
-    upload_wximg,
-    pil_to_b64
+    upload_wximg
 )
 
 ##################################################
@@ -168,14 +167,12 @@ def handleTask(reqBody):
         for result in total_results:
             images.append({
                 'image': result['image'].convert('RGB'),
-                'imageb64': pil_to_b64(result['image'].convert('RGB')),
                 'seed': result['seed'],
                 'mime_type': 'image/png',
                 'nsfw': result['nsfw']
             })
 
         print('===> prepare upload wximg')
-        prompt(images[0]['imageb64'])
         upload_wximg(accessToken, taskId, images[0]['seed'], images[0]['image'])
 
     except RuntimeError as e:

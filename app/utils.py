@@ -112,7 +112,7 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
         output = BytesIO()
 
         pilImg.save(output, format='PNG')
-
+        pilImg.save('./myphoto.png', 'PNG')
 
         info = upload_info.json()
         print('===> upload_info', info )
