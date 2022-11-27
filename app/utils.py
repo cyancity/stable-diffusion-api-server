@@ -97,7 +97,7 @@ def finishTask(accessToken: str, taskId: str, fileId: str = ''):
 
 def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
 
-    print(pilImg)
+    print('Start upload_wximg')
     path = taskId + "/" + "seed" + str(seed) + ".png"
 
     try:

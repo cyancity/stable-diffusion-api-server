@@ -125,7 +125,7 @@ def handleTask(reqBody):
             args_dict = {
                 # sampler
                 'prompt': [prompt],
-                'num_inference_steps': retrieve_param('num_inference_steps', reqBody, int, 50),
+                'num_inference_steps': retrieve_param('num_inference_steps', reqBody, int, 5),
                 'guidance_scale': retrieve_param('guidance_scale', reqBody, float, 7.5),
                 'eta': retrieve_param('eta', reqBody, float, 0.0),
                 'generator': generator
@@ -177,19 +177,20 @@ def handleTask(reqBody):
         output_data['images'] = images
 
         print('===> prepare upload wximg')
-        upload_wximg(accessToken, taskId, images[0]['seed'], images[0].image)
 
+        print(accessToken, taskId, images[0]['seed'], images[0].image)
+        print('lalalla')
+        upload_wximg(accessToken, taskId, images[0]['seed'], images[0].image)
+        print('lalalal')
         # return flask.jsonify({"msg": 'Gpu busy', "code": -1})
 
     except RuntimeError as e:
+        print(str(e))
         gpu_running = False
         finishTask(accessToken, taskId)
         output_data['status'] = 'failure'
         output_data['message'] = 'A RuntimeError occurred. You probably ran out of GPU memory. Check the server logs for more details.'
-        print(str(e))
-        return flask.jsonify(str(e))
 
-    # return flask.jsonify(output_data)
 
 def _generate():
     # Prepare output container:
@@ -204,4 +205,4 @@ def _generate():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1337, debug=False)
+    app.run(host='0.0.0.0', port=1337, debug=True)
