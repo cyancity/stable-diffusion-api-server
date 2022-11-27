@@ -168,7 +168,7 @@ def handleTask(reqBody):
         images = []
         for result in total_results:
             images.append({
-                'image': result['image'],
+                'image': result['image'].convert('RGB'),
                 'seed': result['seed'],
                 'mime_type': 'image/png',
                 'nsfw': result['nsfw']
