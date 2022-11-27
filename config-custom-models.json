@@ -1,5 +1,5 @@
 {
-  "hf_token": "your_hugging_face_token",
+  "hf_token": "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",
   "custom_models": [
     {
       "model_path": "/path/to/directory/containing/model_index.json",
