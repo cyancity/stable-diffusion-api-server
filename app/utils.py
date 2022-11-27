@@ -109,10 +109,9 @@ def upload_wximg(accessToken: str, taskId: str, seed: int, pilImg):
             "path": path
         })
 
-        print('===> upload_info', upload_info )
 
         info = upload_info.json()
-        print('json', upload_info)
+        print('===> upload_info', info )
 
         if not info["errcode"] == 0:
             print('==> upload Failed', info)
