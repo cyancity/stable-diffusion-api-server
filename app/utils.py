@@ -91,3 +91,26 @@ def finishTask(accessToken: str, taskId: str, fileId: str = ''):
         })
     print('===> request detail', r.request.url, r.request.body)
     print('===> Cloud Func Res', r.status_code, r._content)
+
+def upload_wximg(accessToken: str, taskId: str, fileId: str, files):
+    path = taskId + '/' + fileId.replace('cloud://','')
+    upload_info = requests.post(config['wx_prefix'] + config['wx_upload_path'], params={
+        "access_token": accessToken,
+        "env": config['wx_img_env'],
+        "path": path
+    }).json()
+
+    if not upload_info["errcode"] == 0:
+        # Failed
+        return finishTask(accessToken, taskId)
+    upload_img = requests.post(upload_info['url'], files=files, json={
+        "key": path,
+        "Signature": upload_info['authorization'],
+        "x-cos-security-token": upload_info['token'],
+        "x-cos-meta-fileid	": upload_info['cos_file_id']
+    })
+
+    if upload_img.ok:
+        finishTask(accessToken, taskId, upload_info['file_id'])
+    else:
+        finishTask(accessToken, taskId)

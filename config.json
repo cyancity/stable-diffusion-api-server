@@ -7,9 +7,9 @@
 
   "wx_prefix": "https://api.weixin.qq.com",
   "wx_download_path": "/tcb/batchdownloadfile",
+  "wx_upload_path": "/tcb/uploadfile",
   "wx_token_path": "/cgi-bin/token",
   "wx_cloud_func_path": "/tcb/invokecloudfunction",
-
 
   "wx_img_env": "prod-0gbpqv7wb25ec7fa",
   "img_max_age": "72000"
