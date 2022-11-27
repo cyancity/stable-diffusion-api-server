@@ -13,11 +13,13 @@ from utils import (
     getAccessToken,
     get_wximg_by_id,
     get_compute_platform,
+    upload_wximg,
 )
 
 ##################################################
 # Engines
 
+gpu_running = False
 
 class Engine(object):
     def __init__(self):
@@ -97,6 +99,11 @@ def draw():
 
 def _generate():
     # Prepare output container:
+    if gpu_running:
+        return flask.jsonify({"msg": 'Gpu busy', "code": -1})
+    else:
+        flask.jsonify({"msg": 'Gpu busy', "code": -1})
+
     output_data = {}
     accessToken = getAccessToken()
     # Handle request:
@@ -166,17 +173,13 @@ def _generate():
                 'mime_type': 'image/png',
                 'nsfw': result['nsfw']
             })
+
         output_data['images'] = images
 
-        # TODO upload pic
-        # def upload_pic -> fileId
-        # TODO invokeCloudFunction
-        # (name: 'finishTask') postBody [taskId: str, success: bool, fileId: str]
-        return flask.jsonify({"msg": 'Received'})
+        print('===> prepare upload wximg')
+        upload_wximg(accessToken, taskId, images[0]['seed'], images[0].image)
 
     except RuntimeError as e:
-        # TODO invokeCloudFunction
-        # (name: 'finishTask') postBody [taskId: str, success: False]
         finishTask(accessToken, taskId)
         output_data['status'] = 'failure'
         output_data['message'] = 'A RuntimeError occurred. You probably ran out of GPU memory. Check the server logs for more details.'
