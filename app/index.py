@@ -15,6 +15,7 @@ from utils import (
     get_wximg_by_id,
     get_compute_platform,
     upload_wximg,
+    pil_to_b64
 )
 
 ##################################################
@@ -167,20 +168,15 @@ def handleTask(reqBody):
         for result in total_results:
             images.append({
                 'image': result['image'].convert('RGB'),
+                'imageb64': pil_to_b64(result['image'].convert('RGB')),
                 'seed': result['seed'],
                 'mime_type': 'image/png',
                 'nsfw': result['nsfw']
             })
 
         print('===> prepare upload wximg')
-
-        print(accessToken, taskId)
-        print('lalalla')
-        print(len(images))
-        print(images)
+        prompt(images[0]['imageb64'])
         upload_wximg(accessToken, taskId, images[0]['seed'], images[0]['image'])
-        print('lalalal')
-        # return flask.jsonify({"msg": 'Gpu busy', "code": -1})
 
     except RuntimeError as e:
         print(str(e))
