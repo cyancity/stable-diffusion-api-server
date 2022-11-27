@@ -30,6 +30,8 @@ class Engine(object):
     def process(self, kwargs):
         return []
 
+def dummy(images, **kwargs):
+    return images, False
 
 class EngineStableDiffusion(Engine):
     def __init__(self, pipe, sibling=None, custom_model_path=None):
@@ -54,6 +56,8 @@ class EngineStableDiffusion(Engine):
                 feature_extractor=sibling.engine.feature_extractor
             )
         pipeline = self.engine.to(get_compute_platform('engine'))
+
+        pipe.safety_checker = dummy
         pipeline.enable_attention_slicing()
 
     def process(self, kwargs):
