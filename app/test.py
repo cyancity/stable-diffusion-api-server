@@ -17,6 +17,8 @@ png = requests.get('https://img-blog.csdnimg.cn/20181106200939520.png?x-oss-proc
 img = Image.open(BytesIO(png.content)).convert('RGB')
 
 
+final = BytesIO(png.content)
+
 output = BytesIO()
 
 img.save(output, format='PNG')
