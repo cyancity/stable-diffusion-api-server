@@ -28,3 +28,8 @@ def file_to_pil_image(input):
 
 def get_compute_platform(context):
     return 'cuda'
+
+
+def pil_to_file(input, taskId, seed):
+    buffer = BytesIO()
+    input.save('./output/' + taskId + 'seed' + seed, 'PNG')
