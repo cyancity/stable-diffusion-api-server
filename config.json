@@ -1,16 +1,6 @@
 {
-  "hf_token": "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",
+  "skip": "true",
+  "attention_slicing": "true",
   "model_id": "Linaqruf/anything-v3.0",
-
-  "app_id": "wx5c464fcabe81b52e",
-  "app_secret": "3f283afeecb46a9ac66410bfb0456605",
-
-  "wx_prefix": "https://api.weixin.qq.com",
-  "wx_download_path": "/tcb/batchdownloadfile",
-  "wx_upload_path": "/tcb/uploadfile",
-  "wx_token_path": "/cgi-bin/token",
-  "wx_cloud_func_path": "/tcb/invokecloudfunction",
-
-  "wx_img_env": "prod-0gbpqv7wb25ec7fa",
-  "img_max_age": "72000"
+  "hf_token": "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"
 }

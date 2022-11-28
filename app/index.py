@@ -1,7 +1,9 @@
+import os
 import torch
 import flask
+
 from diffusers import (
-    DiffusionPipeline,
+    StableDiffusionPipeline,
     StableDiffusionImg2ImgPipeline
 )
 
@@ -11,28 +13,89 @@ from setting import (
 )
 
 from utils import (
-    pil_to_file,
+    iso_date_time,
     retrieve_param,
-    get_compute_platform,
+    skip_safety_checker
 )
 
+###############################
+# Engine
 
-def dummy(images, **kwargs):
-    return images, False
 
-# pipe.safety_checker = dummy
-# pipeline.enable_attention_slicing()
+class Engine(object):
+    def __init__(self) -> None:
+        pass
+
+    def process(selef, kwargs):
+        return []
+
+
+class EngineStableDiffusion(Engine):
+    def __init__(self, pipe, sibling=None) -> None:
+        super().__init__()
+        print("load pipeline start:", iso_date_time(), flush=True)
+        if sibling == None:
+            self.engine = pipe.from_pretrained(
+                config['model_id'],
+                revision="main",
+                torch_dtype=torch.float16,
+                use_auth_token=hf_token.strip()
+            )
+        else:
+            self.engine = pipe(
+                vae=sibling.engine.vae,
+                text_encoder=sibling.engine.text_encoder,
+                tokenizer=sibling.engine.tokenizer,
+                unet=sibling.engine.unet,
+                scheduler=sibling.engine.scheduler,
+                safety_checker=sibling.engine.safety_checker,
+                feature_extractor=sibling.engine.feature_extractor
+            )
+        self.engine.to('cuda')
+
+        if bool(config['skip']):
+            self.engine.safety_checker = skip_safety_checker
+        if bool(config['attention_slicing']):
+            self.engine.enable_attention_slicing()
+        print('attention_slicing', bool(config['attention_slicing']))
+        print(self.engine)
+        print("loaded models after:", iso_date_time(), flush=True)
+
+    def process(self, kwargs):
+        return self.engine(**kwargs)
+
+
+class EngineManager(object):
+    def __init__(self) -> None:
+        self.engines = {}
+
+    def has_engine(self, name):
+        return (name in self.engines)
+
+    def add_engine(self, name, engine):
+        if self.has_engine(name):
+            return False
+        self.engines[name] = engine
+        return True
+
+    def get_engine(self, name):
+        if not self.has_engine(name):
+            return None
+        return self.engines[name]
+###############################
 
 
 app = flask.Flask(__name__)
 
-txt2imgPipe = DiffusionPipeline.from_pretrained(
-    config['model_id'],
-    torch_dtype=torch.float16,
-    use_auth_token=hf_token.strip()
-).to('cuda')
-img2imgPipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-    config['model_id'], use_auth_token=hf_token.strip(), torch_dtype=torch.float16).to('cuda')
+manager = EngineManager()
+
+manager.add_engine('txt2img', EngineStableDiffusion(
+    StableDiffusionPipeline, sibling=None))
+manager.add_engine('img2img', EngineStableDiffusion(
+    StableDiffusionImg2ImgPipeline, sibling=manager.get_engine('txt2img')))
+
+IMG_TASK = 'img2img'
+TXT_TASK = 'txt2img'
 
 
 @app.route('/inference', methods=['POST'])
@@ -41,50 +104,64 @@ def draw():
     return _generate()
 
 
-@app.route('/ping', methods=['POST'])
-def ping():
-    print('Received Draw')
-    return flask.jsonify({"msg": 'Image Created', "code": 0})
-
-
 def _generate():
-    print('TASK START')
-    image = flask.request.form['image']
+    task = flask.request.form['task']
+    print('TASK START', task)
+
+    engine = manager.get_engine(task)
+
     generator = torch.Generator(device='cuda')
     seed = generator.seed()
     try:
+        seed = retrieve_param('seed', flask.request.form, int, 0)
+        if (seed == 0):
+            generator = torch.Generator(device='cuda')
+        else:
+            generator = torch.Generator(device='cuda').manual_seed(seed)
+
+        new_seed = generator.seed()
+        prompt = flask.request.form['prompt'].replace(" ", "_")[:170]
+        taskId = flask.request.form['taskId']
         args_dict = {
             # TODO sampler
-            'prompt': [flask.request.form['prompt']],
-            'taskId': flask.request.form['taskId'],
+            'prompt': [prompt],
             'num_inference_steps': retrieve_param('num_inference_steps', flask.request.form, int, 50),
             'guidance_scale': retrieve_param('guidance_scale', flask.request.form, float, 7.5),
             'eta': retrieve_param('eta', flask.request.form, float, 0.0),
-            'strength': retrieve_param('strength', flask.request.form, float, 0.7)
+            'generator': generator
         }
 
-        if not image:
-            pipe = txt2imgPipe
-            args_dict['init_image'] = None
+        if (task == TXT_TASK):
             args_dict['width'] = retrieve_param(
                 'width', flask.request.form, int, 512)
             args_dict['height'] = retrieve_param(
                 'height', flask.request.form, int, 512)
-        else:
-            pipe = img2imgPipe
-            args_dict['init_image'] = image
+        if (task == IMG_TASK):
+            # TODO blob to pil
+            init_image = flask.request.form['init_image']
+            args_dict['init_image'] = init_image
+            args_dict['strength'] = retrieve_param(
+                'strength', flask.request.form, float, 0.7)
 
         print('START RENDER')
-        pipeline_output = pipe(**args_dict)
+        pipeline_output = engine.process(args_dict)
+        print('RENDERED OUTPUT : ', pipeline_output)
 
         result = pipeline_output[0]
 
-        print('RENDERED RESULT : ', result)
-        pil_to_file(result['image'].convert('RGBA'), args_dict['taskId'], seed)
+        # save to local file
+        for i, img in enumerate(result.images):
+            out = f"{taskId}_seed{new_seed}_steps{args_dict['num_inference_steps']}.png"
+            img.save(os.path.join("output", out))
 
         return flask.jsonify({
             "msg": 'Image Created',
-            "code": 0
+            "code": 0,
+            "data": {
+                "seed": seed,
+                "imagePath": '',
+                "taskId": taskId,
+            }
         })
 
     except RuntimeError as e:
@@ -93,4 +170,4 @@ def _generate():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1337, debug=False)
+    app.run(host='0.0.0.0', port=1337, debug=True)

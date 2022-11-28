@@ -1,7 +1,22 @@
 import flask
 import base64
+import datetime
 from PIL import Image
 from io import BytesIO
+
+
+def iso_date_time():
+    return datetime.datetime.now().isoformat()
+
+
+def load_image(path):
+    image = Image.open(os.path.join("input", path)).convert("RGB")
+    print(f"loaded image from {path}:", iso_date_time(), flush=True)
+    return image
+
+
+def skip_safety_checker(images, *args, **kwargs):
+    return images, False
 
 
 def retrieve_param(key, data, cast, default):
