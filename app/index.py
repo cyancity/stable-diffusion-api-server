@@ -87,6 +87,7 @@ class EngineManager(object):
 
 app = flask.Flask(__name__)
 
+
 manager = EngineManager()
 
 manager.add_engine('txt2img', EngineStableDiffusion(
@@ -98,21 +99,21 @@ IMG_TASK = 'img2img'
 TXT_TASK = 'txt2img'
 
 
-@app.route('/inference', methods=['POST'])
+@app.route('/draw', methods=['POST'])
 def draw():
     print('Received Draw')
     return _generate()
 
 
 def _generate():
-    task = flask.request.form['task']
-    print('TASK START', task)
-
-    engine = manager.get_engine(task)
-
-    generator = torch.Generator(device='cuda')
-    seed = generator.seed()
     try:
+        task = flask.request.form['task']
+        engine = manager.get_engine(task)
+
+        print('TASK START', task)
+
+        generator = torch.Generator(device='cuda')
+        seed = generator.seed()
         seed = retrieve_param('seed', flask.request.form, int, 0)
         if (seed == 0):
             generator = torch.Generator(device='cuda')
@@ -165,6 +166,7 @@ def _generate():
         })
 
     except RuntimeError as e:
+        print('RuntimeError')
         print(str(e))
         return flask.jsonify({"msg": 'GPU Error', "code": -1})
 
