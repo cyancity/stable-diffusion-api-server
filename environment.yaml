@@ -18,3 +18,4 @@ dependencies:
       - Flask
       - accelerate
       - ftfy
+      - requests-toolbelt
